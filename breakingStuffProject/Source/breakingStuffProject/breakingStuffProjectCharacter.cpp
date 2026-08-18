@@ -59,6 +59,8 @@ void AbreakingStuffProjectCharacter::SetupPlayerInputComponent(UInputComponent* 
 		// Looking/Aiming
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AbreakingStuffProjectCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AbreakingStuffProjectCharacter::LookInput);
+
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AbreakingStuffProjectCharacter::Attack);
 	}
 	else
 	{
@@ -117,4 +119,10 @@ void AbreakingStuffProjectCharacter::DoJumpEnd()
 {
 	// pass StopJumping to the character
 	StopJumping();
+}
+
+
+void AbreakingStuffProjectCharacter::Attack(const FInputActionValue& Value)
+{
+
 }

@@ -48,11 +48,17 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UInputAction* AttackAction;
 	
 public:
 	AbreakingStuffProjectCharacter();
 
 protected:
+
+	UFUNCTION()
+	void Attack(const FInputActionValue& Value);
 
 	/** Called from Input Actions for movement input */
 	void MoveInput(const FInputActionValue& Value);
