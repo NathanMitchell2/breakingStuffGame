@@ -4,6 +4,8 @@
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/MeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
@@ -42,6 +44,14 @@ AbreakingStuffProjectCharacter::AbreakingStuffProjectCharacter()
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+	
+	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
+	AttackCollision->SetupAttachment(FirstPersonCameraComponent);
+	AttackCollision->SetRelativeLocation(FVector(93.446877f, -0.000001f, -23.775105f));
+	AttackCollision->SetRelativeRotation(FRotator(90.0f, -0.0f, 0.0f));
+	AttackCollision->SetRelativeScale3D(FVector(1.0f, 1.0f, 2.0f));
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AbreakingStuffProjectCharacter::OnBallHit);
 }
 
 void AbreakingStuffProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -60,7 +70,7 @@ void AbreakingStuffProjectCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AbreakingStuffProjectCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AbreakingStuffProjectCharacter::LookInput);
 
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AbreakingStuffProjectCharacter::Attack);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AbreakingStuffProjectCharacter::Attack);
 	}
 	else
 	{
@@ -124,5 +134,64 @@ void AbreakingStuffProjectCharacter::DoJumpEnd()
 
 void AbreakingStuffProjectCharacter::Attack(const FInputActionValue& Value)
 {
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	AttackCollision->SetHiddenInGame(false);
+	GetWorldTimerManager().SetTimer(
+		AttackCollisionTimerHandle,
+		this,
+		&AbreakingStuffProjectCharacter::DisableAttackCollision,
+		0.2f,
+		false
+	);
+	
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,        
+			2.0f,    
+			FColor::Green,
+			TEXT("Attack button pressed!")
+		);
+	}
+}
 
+void AbreakingStuffProjectCharacter::DisableAttackCollision()
+{
+	AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackCollision->SetHiddenInGame(true);
+}
+
+void AbreakingStuffProjectCharacter::OnBallHit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherComp && OtherComp->IsA<USphereComponent>())
+	{
+		TArray<UMeshComponent*> MeshComponents;
+		OtherActor->GetComponents<UMeshComponent>(MeshComponents);
+
+		for (UMeshComponent* MeshComponent : MeshComponents)
+		{
+			if (MeshComponent && MeshComponent->IsSimulatingPhysics())
+			{
+				FVector HitDirection = MeshComponent->GetComponentLocation() - AttackCollision->GetComponentLocation();
+				HitDirection = HitDirection.GetSafeNormal();
+				if (HitDirection.IsNearlyZero())
+				{
+					HitDirection = AttackCollision->GetForwardVector();
+				}
+
+				MeshComponent->AddImpulse(HitDirection * 1000.0f, NAME_None, true);
+				break;
+			}
+		}
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,        
+				2.0f,      
+				FColor::Red,
+				TEXT("Attack collision hit something!")
+			);
+		}
+	}
 }

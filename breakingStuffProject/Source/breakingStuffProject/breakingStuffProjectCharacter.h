@@ -52,6 +52,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UInputAction* AttackAction;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UCapsuleComponent* AttackCollision;
+	
+	UFUNCTION()
+	void OnBallHit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	void DisableAttackCollision();
+	FTimerHandle AttackCollisionTimerHandle;
+	
 public:
 	AbreakingStuffProjectCharacter();
 
@@ -97,4 +106,3 @@ public:
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 };
-

@@ -72,3 +72,24 @@ breakingStuffProject/Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 breakingStuffProject/DerivedDataCache/*
+
+
+### JetBrains Rider ###
+.idea/
+*.sln.iml
+*.suo
+*.user
+*.userprefs
+
+### .NET / Build Outputs ###
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.suo
+*.user
+*.cache
+
+### Virtual Studio & Tooling remnants ###
+.vs/
+_ReSharper*/
