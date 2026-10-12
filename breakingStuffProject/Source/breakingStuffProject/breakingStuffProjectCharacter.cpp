@@ -14,6 +14,8 @@
 
 AbreakingStuffProjectCharacter::AbreakingStuffProjectCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	
@@ -45,13 +47,23 @@ AbreakingStuffProjectCharacter::AbreakingStuffProjectCharacter()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
 	
-	AttackCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Attack Collision"));
-	AttackCollision->SetupAttachment(FirstPersonCameraComponent);
-	AttackCollision->SetRelativeLocation(FVector(93.446877f, -0.000001f, -23.775105f));
-	AttackCollision->SetRelativeRotation(FRotator(90.0f, -0.0f, 0.0f));
-	AttackCollision->SetRelativeScale3D(FVector(1.0f, 1.0f, 2.0f));
+	AttackCollision = CreateDefaultSubobject<USphereComponent>(TEXT("Attack Collision"));
+	AttackCollision->SetupAttachment(GetMesh(), FName("hand_r"));
+	AttackCollision->SetSphereRadius(40.0);
+	AttackCollision->SetHiddenInGame(true);
 	AttackCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttackCollision->OnComponentBeginOverlap.AddDynamic(this, &AbreakingStuffProjectCharacter::OnBallHit);
+}
+
+void AbreakingStuffProjectCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AttackMontage && AnimInstance && AnimInstance->Montage_IsPlaying(AttackMontage))
+	{
+		AttackCollision->SetWorldRotation(GetMesh()->GetSocketRotation(FName("hand_r")));
+	}
 }
 
 void AbreakingStuffProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -77,6 +89,8 @@ void AbreakingStuffProjectCharacter::SetupPlayerInputComponent(UInputComponent* 
 		UE_LOG(LogbreakingStuffProject, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
+
+
 
 
 void AbreakingStuffProjectCharacter::MoveInput(const FInputActionValue& Value)
@@ -136,11 +150,12 @@ void AbreakingStuffProjectCharacter::Attack(const FInputActionValue& Value)
 {
 	AttackCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	AttackCollision->SetHiddenInGame(false);
+	PlayAttackMontage(AttackMontage);
 	GetWorldTimerManager().SetTimer(
 		AttackCollisionTimerHandle,
 		this,
 		&AbreakingStuffProjectCharacter::DisableAttackCollision,
-		0.2f,
+		1.0f,
 		false
 	);
 	
@@ -172,12 +187,7 @@ void AbreakingStuffProjectCharacter::OnBallHit(UPrimitiveComponent* OverlappedCo
 		{
 			if (MeshComponent && MeshComponent->IsSimulatingPhysics())
 			{
-				FVector HitDirection = MeshComponent->GetComponentLocation() - AttackCollision->GetComponentLocation();
-				HitDirection = HitDirection.GetSafeNormal();
-				if (HitDirection.IsNearlyZero())
-				{
-					HitDirection = AttackCollision->GetForwardVector();
-				}
+				FVector HitDirection = AttackCollision->GetForwardVector();
 
 				MeshComponent->AddImpulse(HitDirection * 1000.0f, NAME_None, true);
 				break;
@@ -195,3 +205,17 @@ void AbreakingStuffProjectCharacter::OnBallHit(UPrimitiveComponent* OverlappedCo
 		}
 	}
 }
+void AbreakingStuffProjectCharacter::PlayAttackMontage(UAnimMontage* MontageToPlay)
+ {
+	if (MontageToPlay && GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			// Optional: Ensure we aren't already playing a montage to prevent spamming
+			if (!AnimInstance->IsAnyMontagePlaying())
+			{
+				AnimInstance->Montage_Play(MontageToPlay, 1.0f);
+			}
+		}
+	}
+ }

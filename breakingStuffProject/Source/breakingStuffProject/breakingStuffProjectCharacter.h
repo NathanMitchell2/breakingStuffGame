@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "breakingStuffProjectCharacter.generated.h"
@@ -53,13 +54,12 @@ protected:
 	UInputAction* AttackAction;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UCapsuleComponent* AttackCollision;
+	USphereComponent* AttackCollision;
 	
-	UFUNCTION()
-	void OnBallHit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	void DisableAttackCollision();
-	FTimerHandle AttackCollisionTimerHandle;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation", meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* AttackMontage;
+	
+	
 	
 public:
 	AbreakingStuffProjectCharacter();
@@ -90,11 +90,18 @@ protected:
 	/** Handles jump end inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
+	
+	UFUNCTION()
+	void OnBallHit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	void DisableAttackCollision();
+	FTimerHandle AttackCollisionTimerHandle;
 protected:
 
 	/** Set up input action bindings */
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+
+	virtual void Tick(float DeltaSeconds) override;
 	
 
 public:
@@ -104,5 +111,6 @@ public:
 
 	/** Returns first person camera component **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
-
+	
+	void PlayAttackMontage(UAnimMontage* MontageToPlay);
 };
